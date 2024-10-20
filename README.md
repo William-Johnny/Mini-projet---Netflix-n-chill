@@ -1,10 +1,10 @@
 # Mini-projet - Netflix-n-chill
 
-This repository is a school project made to teach us about databases.
+>This repository is a school project made to teach us about databases.
 
 ## Presentation
 
-> Netflix provides services to its European customers, it is subject to the GDPR, and as such, it must provide a means of consulting the data it has on its customers.
+Netflix provides services to its European customers, it is subject to the GDPR, and as such, it must provide a means of consulting the data it has on its customers.
 
 So to discover in more detail one of the four database management systems seen in class, we sent request to the Netflix history of a typical user.
 
