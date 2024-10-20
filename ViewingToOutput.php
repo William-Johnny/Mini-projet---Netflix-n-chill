@@ -15,21 +15,53 @@
 
     fputcsv($outputFile, $newHeader);
     // Read the CSV file row by row
-    $n=0;
+    $counter=0;
     while (($row = fgetcsv($inputFile)) !== false) {
+
+        $counter++;
+        if ($row[5]!=="") {
+            echo "Skipping line $counter\n";
+            continue;
+        }
 
         $startTimeTab = preg_split("/[\s]/", $row[1]);
         $startDate= $startTimeTab[0];
         $startTime= $startTimeTab[1];
 
-        $titleTab = preg_split("/[,:()]/", $row[4]);
-        $title = $titleTab[0];
-        $SeasonNumber = $titleTab[1];
-        $EpTitle = $titleTab[2];
-        $EpNumber = $titleTab[3];
-        isset($SeasonNumber[1]) ? $SeasonNumber[1] : "";
-        isset($EpTitle[2]) ? $EpTitle[1] : "";
-        isset($EpNumber[3]) ? $EpNumber[1] : "";
+        $titleTab = preg_split("/[:()]/", $row[4]);
+        if ($titleTab[1]==="US") {
+            $title = $titleTab[0];
+            $SeasonNumber = $titleTab[3];
+            $EpTitle = $titleTab[4];
+            $EpNumber = $titleTab[5];
+            isset($SeasonNumber) ? $SeasonNumber[1] : "";
+            isset($EpTitle) ? $EpTitle[1] : "";
+            isset($EpNumber) ? $EpNumber[1] : "";
+        }else if ($titleTab[1]===" Pays-Bas et Allemagne") {
+            $title = $titleTab[0];
+            $SeasonNumber = $titleTab[2];
+            $EpTitle = $titleTab[3];
+            $EpNumber = $titleTab[4];
+            isset($SeasonNumber) ? $SeasonNumber[1] : "";
+            isset($EpTitle) ? $EpTitle[1] : "";
+            isset($EpNumber) ? $EpNumber[1] : "";
+        }else if (!$titleTab[2] && !$titleTab[3]) {
+            $title = $titleTab[0].$titleTab[1];
+            $SeasonNumber = "";
+            $EpTitle = "";
+            $EpNumber = "";
+        }else{
+            $title = $titleTab[0];
+            $SeasonNumber = $titleTab[1];
+            $EpTitle = $titleTab[2];
+            $EpNumber = $titleTab[3];
+            isset($SeasonNumber) ? $SeasonNumber[1] : "";
+            isset($EpTitle) ? $EpTitle[1] : "";
+            isset($EpNumber) ? $EpNumber[1] : "";
+        }
+        
+        
+        
 
         // Rebuild the row with the new structure
         $newRow = [$row[0], $startDate, $startTime, $row[2], $title,$SeasonNumber,$EpTitle, $EpNumber,$row[6]];

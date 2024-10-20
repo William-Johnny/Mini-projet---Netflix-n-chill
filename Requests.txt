@@ -1,0 +1,445 @@
+1. Combien y-a-t’il de profils sur le compte netflix ? quels sont les comptes disponibles ?
+
+    Request : 
+
+        GET /netflix_data/_search?size=0 
+        {
+        "aggs": {
+            "distinct_count": {
+            "cardinality": {
+                "field": "profile_name"
+            }
+            }
+        }
+        }
+
+Answer : Il y'a 4 profils sur le compte Netlfix. 
+
+
+2. Depuis quand le compte est-il abonné à Netflix ? (on partira du principe qu’il a consommé son abonnement le jour où il s’est abonné)
+
+    Request : 
+
+        GET /netflix_data/_search
+        {
+        "size": 1,
+        "sort": [
+            {
+            "start_date": {
+                "order": "asc"
+            }
+            }
+        ]
+        }
+
+    Answer : Le compte est abonné à Netflix depuis le 15 septembre 2024
+
+3. Combien de temps chaque profil a passé sur Netflix ?
+
+    Request : 
+        
+        GET /netflix_data/_search?size=0
+        {
+        "aggs": {
+            "time-spent": {
+            "terms": {
+                "field": "profile_name",
+                "size": 10
+            },
+            "aggs": {
+                "total_time_seconds": {
+                "sum": {
+                    "field": "duration"
+                }
+                },
+                "hours": {
+                "bucket_script": {
+                    "buckets_path": {
+                    "total_seconds": "total_time_seconds"
+                    },
+                    "script": "Math.floor(params.total_seconds / 3600)"
+                }
+                },
+                "minutes": {
+                "bucket_script": {
+                    "buckets_path": {
+                    "total_seconds": "total_time_seconds"
+                    },
+                    "script": "Math.floor((params.total_seconds % 3600) / 60)"
+                }
+                },
+                "seconds": {
+                "bucket_script": {
+                    "buckets_path": {
+                    "total_seconds": "total_time_seconds"
+                    },
+                    "script": "(params.total_seconds % 60)"
+                }
+                }
+            }
+            }
+        }
+        }
+        
+    Answer : 
+        Henri => 1945h 56m 19s
+        Okona => 409h 56m 23s
+        Papa => 296h 35m 58s
+        À voir ensemble => 1m 16s
+
+4. Par profils, quels sont les 4 équipements les plus utilisés pour visionner Netflix ?
+
+    Request : 
+        GET /netflix_data/_search?size=0
+        {
+        "aggs": {
+            "time-spent": {
+            "terms": {
+                "field": "profile_name"
+            },
+            "aggs": {
+                "test": {
+                "terms": {
+                    "field": "device_type",
+                    "size": 1
+                }
+                }
+            }
+            }
+        }
+        }
+
+    Answer: 
+        Henri => Google Sabrina ATV Set Top Box
+        Okona => Google Sabrina ATV Set Top Box
+        Papa => Apple iPad 2 WiFi
+        À voir ensemble => Chrome PC (Cadmium)
+
+5. Donnez la date et heure de début et de fin de visionnage de l’épisode 7 de la saison 3 des nouvelles aventures de Sabrina.
+
+    Request:
+
+        GET /netflix_data/_search
+        {
+        "query": {
+            "bool": {
+            "must": [
+                {
+                "match": { "title": "Les nouvelles aventures de Sabrina" }
+                },
+                {
+                "wildcard": {
+                    "season_number": {
+                    "value": "*3*"
+                    }
+                }
+                },
+                {
+                "wildcard": {
+                    "episode_number": {
+                    "value": "*7*"
+                    }
+                }
+                }
+            ]
+            }
+            
+        }
+        }
+    
+    Answer: 
+        start => 2023-08-11 23:23:09 
+        end => 2023-08-13 08:42:01
+
+6. Quelle est la dernière série regardée par Okona ?
+
+    Request :
+        GET /netflix_data/_search
+        {
+        "size": 1,
+        "query": {
+            "bool": {
+            "must": [
+                {
+                "match": {
+                    "profile_name": "Okona"
+                }
+                },{
+                "wildcard": {
+                    "season_number": {
+                    "value": "*Saison*"
+                    }
+                }
+                }
+            ]
+            }
+        },
+        "sort": [
+            {
+            "start_date": {
+                "order": "desc"
+            }
+            }
+        ]
+        }
+
+    Answer: La dernière série regardée par Okona est Anne with an E.
+
+7. Quel est le film le plus long regardé sur netflix ?
+
+    Request:
+
+        GET /netflix_data/_search
+        {
+        "size": 1,
+        "query": {
+            "bool": {
+            "must": [
+                {
+                "match": {
+                    "season_number": ""
+                }
+                }
+            ]
+            }
+        },
+        "sort": [
+            {
+            "duration": {
+                "order": "desc"
+            }
+            }
+        ]
+        }
+
+    Answer: The Dark Knight Rises
+
+8. Lister toutes les séries regardées par le profil Henri ?
+
+    Request:
+        GET /netflix_data/_search?size=0
+        {
+        "query": {
+            "bool": {
+            "must": [
+                {
+                "match": {
+                    "profile_name": "Henri"
+                }
+                }
+            ],
+            "should": [
+                {
+                "wildcard": {
+                    "season_number": {
+                    "value": "*Saison*"
+                    }
+                }
+                },
+                {
+                "wildcard": {
+                    "season_number": {
+                    "value": "*Partie*"
+                    }
+                }
+                }
+            ],
+            "minimum_should_match": 1
+            }
+        },
+        "aggs": {
+            "Title": {
+            "terms": {
+                "field": "title"
+            }
+            }
+        }
+        }
+    
+    Answer: The Big Bang Theory, Community, Brooklyn Nine-Nine...
+
+
+9. Combien de séries et films différents ont étés regardés en 2020 (#COVID) ?
+
+    Request:
+
+        GET /netflix_data/_search?size=0
+        {
+        "query": {
+            "range": {
+            "start_date": {
+                "gte": "2020-01-01",
+                "lte": "2020-12-31"
+            }
+            }
+        },
+        "aggs": {
+            "distinct_count": {
+            "cardinality": {
+                "field": "title"
+            }
+            }
+        }
+        }
+    
+    Answer: 100 séries et films différents ont étés regardés en 2020.
+
+10. Combien de saisons compte la série Friends ? 
+
+    Request:
+
+        GET /netflix_data/_search?size=0
+        {
+        "query": {
+            "bool": {
+            "must": [
+                {
+                "match": {
+                    "title": "Friends"
+                }
+                }
+            ]
+            }
+        },
+        "aggs": {
+            "distinct_count": {
+            "cardinality": {
+                "field": "season_number" 
+            }
+            }
+        }
+        }
+
+    Answer: La série Friends compte 10 saisons mais personne n'a vu la saison 2 et 3 donc la recherche renvoie 8. 
+
+11. Quelle est la série avec le plus d’épisodes ? 
+
+    Request:
+
+        GET /netflix_data/_search?size=0
+        {
+        "size": 1,
+        "aggs": {
+            "series_with_most_episodes": {
+            "terms": {
+                "field": "title",
+                "order": {
+                "total_episodes": "desc"
+                }
+            },
+            "aggs": {
+                "total_episodes": {
+                "cardinality": {
+                    "field": "episode_title"
+                }
+                }
+            }
+            }
+        }
+        }
+    
+    Answer: The Big Bang Theory est la série avec le plus d’épisodes avec 278 épisodes.
+
+12. Quelle vidéo a été vue par tous les profils ?
+
+    Request:
+        GET /netflix_data/_search?size=0
+        {
+        "aggs": {
+            "video_seen_by_user": {
+            "terms": {
+                "field": "title",
+                "size": 10000
+            },
+            "aggs": {
+                "user_count": {
+                "cardinality": {
+                    "field": "profile_name"
+                }
+                },
+                "user_sort": {
+                "bucket_sort": {
+                    "sort": [
+                    { "user_count": { "order": "desc" } } 
+                    ]
+                }
+                }
+            }
+            }
+        }
+        }
+
+    Answer: Tous les profils ont vu "Pokémon, la série" , "Lucifer", "Les aventures de Tintin", "La casa de papel" et "Maniac"
+
+
+13.Combien de fois la série Community a été vue en entier, en prenant en compte qu’un episode est considéré comme vu entièrement si son visionnage dure plus de 20 minutes.
+
+    Request:
+        GET /netflix_data/_search?size=0
+        {
+        "query": {
+            "constant_score": {
+            "filter": {
+                "match": {
+                "title": "Community"
+                }
+            }
+            }
+        },
+        "aggs": {
+            "seasons": {
+            "terms": {
+                "field": "season_number",
+                "size": 25
+            },
+            "aggs": {
+                "episode": {
+                "terms": {
+                    "field": "episode_number",
+                    "size": 25
+                },
+                "aggs": {
+                    "duration_filter": {
+                    "filter": {
+                        "range": {
+                        "duration": {
+                            "gte": 1080  // Duration greater than or equal to 18 minutes (1080 seconds)
+                        }
+                        }
+                    },
+                    "aggs": {
+                        "duration_count": {
+                        "value_count": {
+                            "field": "duration"
+                        }
+                        }
+                    }
+                    },
+                    "episode_avg": {
+                    "bucket_script": {
+                        "buckets_path": {
+                        "count": "duration_filter>duration_count"
+                        },
+                        "script": "params.count"
+                    }
+                    }
+                }
+                },
+                "season_avg": {
+                "avg_bucket": {
+                    "buckets_path": "episode>episode_avg"
+                }
+                }
+            }
+            },
+            "avg_time_watched": {
+            "avg_bucket": {
+                "buckets_path": "seasons>season_avg",
+                "format": "0"
+            }
+            }
+        }
+        }
+
+    Answer: Tout les épisodes de plus de 18min on été vu en moyenne 2 fois. Ainsi on peut admettre que la série complète à été vue 2 fois. 
+
