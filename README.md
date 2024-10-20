@@ -14,6 +14,6 @@ This project is carried out using a randomly selected DBMS. Mine being: ElasticS
 
 ## How does it work ?
 
-All the data should already be on the ElasticSearch server. You just need to connect yourself to Kibana and copy/paste the requests in the editor then run them :)
+All the data should already be on the ElasticSearch server. You just need to connect yourself to Kibana and copy/paste the requests from the Request.txt file in the editor then run them :)
 
 
